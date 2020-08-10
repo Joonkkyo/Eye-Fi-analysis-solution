@@ -10,6 +10,9 @@ eye_center_frequency = []
 eye_right_frequency = []
 eye_left_frequency = []
 time_flag = 0
+blue = 0
+green = 128
+red = 0
 url = "https://www.youtube.com/watch?v=PPLop4L2eGk"
 youtube_video = pafy.new(url)
 best = youtube_video.getbest(preftype='mp4')
@@ -70,21 +73,26 @@ print(first_time)
 while True:
     second_time = time.time()
     # print(second_time - first_time)
-    time_flag += 1
     _, frame = cap.read()
     _, frame2 = cap2.read()  # youtube
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
-    # 인식된 얼굴 갯수를 출력
-    # print(len(faces))
-    if 1.9 <= abs(second_time - first_time) < 2.1:
+    if 1.9 <= abs(second_time - first_time) < 2.1 and time_flag == 0:
+        first_time += 1
+        face_frequency.append(len(faces))
+        time_flag = 1
+        if face_frequency[-1] == 0:
+            concentration -= 0.25
+
+    if time_flag and 0.95 < abs(second_time - first_time) < 1.05:
         first_time += 1
         face_frequency.append(len(faces))
         if face_frequency[-1] == 0:
             concentration -= 0.25
 
-    # 인식된 얼굴에 사각형을 출력한다
+    frame = cv2.line(frame, (600, 600), (600, 0), (blue, green, red), 20)
+
     for (x, y, w, h) in faces:
         cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
@@ -111,6 +119,10 @@ while True:
     if cv2.waitKey(1) == 27:
         break
 
+end_time = time.time()
+print("종료 시간:", end_time)
+print(end_time - first_time)
+print(len(face_frequency))
 cap.release()
 cap2.release()
 cv2.destroyAllWindows()
