@@ -2,13 +2,15 @@ import cv2
 import dlib
 import numpy as np
 import pafy
-import time
 
 concentration = 100
+con_list = []
 face_frequency = []
 eye_center_frequency = []
 eye_right_frequency = []
 eye_left_frequency = []
+
+time_count = 0
 time_flag = 0
 blue = 0
 green = 128
@@ -62,41 +64,52 @@ def get_gaze_ratio(eye_points, facial_landmarks):
     if left_side_white == 0:
         gaze_ratio = 1
     elif right_side_white == 0:
-        gaze_ratio = 5
+        gaze_ratio = 2
     else:
         gaze_ratio = left_side_white / right_side_white
     return gaze_ratio
 
 
-first_time = time.time()
-print(first_time)
 while True:
-    second_time = time.time()
-    # print(second_time - first_time)
+    time_count += 1
     _, frame = cap.read()
     _, frame2 = cap2.read()  # youtube
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
-    if 1.9 <= abs(second_time - first_time) < 2.1 and time_flag == 0:
-        first_time += 1
+    if time_flag == 0:
         face_frequency.append(len(faces))
         time_flag = 1
         if face_frequency[-1] == 0:
             concentration -= 0.25
+        con_list.append(concentration)
 
-    if time_flag and 0.95 < abs(second_time - first_time) < 1.05:
-        first_time += 1
+    # if time_flag and 0.9 < abs(second_time - first_time) < 1.1:
+    if time_flag and time_count == 21:
         face_frequency.append(len(faces))
-        if face_frequency[-1] == 0:
-            concentration -= 0.25
+        time_count = 0
 
-    frame = cv2.line(frame, (600, 600), (600, 0), (blue, green, red), 20)
+        if face_frequency[-1] == 0:
+            concentration -= 1
+            if concentration <= 0:
+                concentration = 0
+        else:
+            concentration += 0.25
+            if concentration >= 100:
+                concentration = 100
+        con_list.append(concentration)
+
+    if 50 <= concentration <= 100:
+        red = (100 - concentration) * 5
+        green = 128 + (100 - concentration)
+    else:
+        red = 250
+        green = concentration * 3
+
+    frame = cv2.line(frame, (600, 600), (600, 4 * int(100 - concentration)), (blue, green, red), 20)
 
     for (x, y, w, h) in faces:
         cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-
-    cv2.imshow('youtube', frame2)
 
     faces = detector(gray)
     for face in faces:
@@ -107,23 +120,53 @@ while True:
         gaze_ratio_right_eye = get_gaze_ratio([42, 43, 44, 45, 46, 47], landmarks)
         gaze_ratio = (gaze_ratio_right_eye + gaze_ratio_left_eye) / 2
 
-        if gaze_ratio <= 0.5:
+        # print(gaze_ratio)
+        if gaze_ratio <= 1.0:
             cv2.putText(frame, "RIGHT", (50, 100), font, 2, (0, 0, 255), 3)
-        elif 0.5 < gaze_ratio < 2.5:
+        elif 1.0 < gaze_ratio < 2.0:
             cv2.putText(frame, "CENTER", (50, 100), font, 2, (0, 0, 255), 3)
         else:
             cv2.putText(frame, "LEFT", (50, 100), font, 2, (0, 0, 255), 3)
 
     cv2.imshow("Frame", frame)
+    cv2.imshow('youtube', frame2)
 
     if cv2.waitKey(1) == 27:
         break
 
-end_time = time.time()
-print("종료 시간:", end_time)
-print(end_time - first_time)
-print(len(face_frequency))
+worst_cnt = 0
+worst_max = 0
+worst_time_first = 0
+worst_time_second = 0
+first_flag = 1
+worst_time_first_final = 0
+
+# calculate worst concentration period
+for i in range(len(face_frequency) - 1):
+    if face_frequency[i] == 0 and face_frequency[i + 1] == 0:
+        if first_flag:
+            worst_time_first = i
+            first_flag = 0
+        worst_cnt += 1
+    else:
+        if worst_max < worst_cnt:
+            worst_max = worst_cnt
+            worst_time_first_final = worst_time_first
+            worst_time_second = i
+        first_flag = 1
+        worst_cnt = 0
+
+print("worst_time_first: ", worst_time_first_final)
+print("worst_time_second: ", worst_time_second)
+print(face_frequency)
+# print(len(face_frequency))
+print(con_list)
+# print(len(con_list))
 cap.release()
 cap2.release()
 cv2.destroyAllWindows()
-print(face_frequency)
+
+with open('list_file.txt', 'w') as f:
+    for item in con_list:
+        f.write("%s\n" % item)
+
