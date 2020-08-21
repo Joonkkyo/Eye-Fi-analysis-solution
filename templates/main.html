@@ -1,15 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <title>집중도 분석 결과</title>
+    <meta charset="UTF-8">
+    <style>
+    h1 {
+        font-family: 'Jua', sans-serif;
+        font-size: 60px;
+      }
+
+    h2 {
+        font-family: 'Jua', sans-serif;
+        font-size: 40px;
+      }
+    </style>
 </head>
 <body>
-<h1>집중도 분석 결과</h1>
-홍길동 학생의 집중도:<br/>
-
-<img src="/concentrate.png" alt="concentrate plot">
-<img src="/detail.png" alt="detail plot">
-
+    <center>
+        <h1>집중도 분석 결과</h1>
+        <h2>서준교 학생의 평균 집중도 : {{ avg_concentration }} %
+            <emoji style="font-size:50px">{{ emoji }}</emoji>
+        </h2>
+        <img src="/concentrate.png" alt="concentrate plot"><br/>
+        <h2>해당 학생의 집중력이 가장 낮았던 시점은 {{ start }}초부터 {{ end }}초입니다.</h2>
+<!--<img src="/detail.png" alt="detail plot">-->
+    </center>
 </body>
 </html>
